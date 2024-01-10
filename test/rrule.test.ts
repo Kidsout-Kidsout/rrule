@@ -4,6 +4,7 @@ import {
   testRecurring,
   expectedDate,
   TEST_CTX,
+  formatDate,
 } from './lib/utils'
 import { RRule, rrulestr, Frequency } from '../src/index'
 import { set as setMockDate, reset as resetMockDate } from 'mockdate'
@@ -4180,6 +4181,28 @@ describe('RRule', function () {
       expect(recurrence).toEqual(expected)
 
       resetMockDate()
+    })
+
+    it('generates correct weekly recurrences when dst changes', () => {
+      const rule = new RRule({
+        dtstart: new Date('2011-10-02T09:00:00'),
+        freq: Frequency.WEEKLY,
+        tzid: 'America/New_York',
+      })
+      const dates = rule
+        .between(
+          new Date('2023-10-20T00:00:00'),
+          new Date('2023-11-20T00:00:00')
+        )
+        .map((d) => formatDate(d, 'America/New_York'))
+
+      expect(dates).toEqual([
+        '2023-10-22 09:00:00 GMT−4',
+        '2023-10-29 09:00:00 GMT−4',
+        '2023-11-05 09:00:00 GMT−5',
+        '2023-11-12 09:00:00 GMT−5',
+        '2023-11-19 09:00:00 GMT−5',
+      ])
     })
 
     it('generates correct recurrences when current time is dst', () => {
