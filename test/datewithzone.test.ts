@@ -46,3 +46,24 @@ describe('rezonedDate', () => {
     )
   })
 })
+
+describe('fromStringAndTimezone', () => {
+  it('Creates correct instance', () => {
+    const dt = DateWithZone.fromStringAndTimezone(
+      '2010-10-05T11:00:00',
+      'America/New_York'
+    )
+    expect(formatDate(dt.rezonedDate(), 'America/New_York')).toStrictEqual(
+      '2010-10-05 11:00:00 GMT−4'
+    )
+  })
+  it('Creates correct instance 2', () => {
+    const dt = DateWithZone.fromStringAndTimezone(
+      '2023-11-26T09:00:00.000',
+      'America/New_York'
+    )
+    expect(formatDate(dt.rezonedDate(), 'America/New_York')).toStrictEqual(
+      '2023-11-26 09:00:00 GMT−5'
+    )
+  })
+})

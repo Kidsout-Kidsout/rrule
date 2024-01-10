@@ -148,7 +148,14 @@ function isFiltered(
 }
 
 function rezoneIfNeeded(date: Date, options: ParsedOptions) {
-  return new DateWithZone(date, options.tzid).rezonedDate()
+  if (!options.tzid) return date
+
+  const dwt = DateWithZone.fromStringAndTimezone(
+    date.toISOString().replace('Z', ''),
+    options.tzid
+  )
+
+  return dwt.rezonedDate()
 }
 
 function emitResult<M extends QueryMethodTypes>(iterResult: IterResult<M>) {

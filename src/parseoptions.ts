@@ -177,7 +177,8 @@ export function parseOptions(options: Partial<Options>) {
 
   // byhour
   if (!isPresent(opts.byhour)) {
-    opts.byhour = opts.freq < RRule.HOURLY ? [opts.dtstart.getUTCHours()] : null
+    const hout = opts.dtstart.getHours()
+    opts.byhour = opts.freq < RRule.HOURLY ? [hout] : null
   } else if (isNumber(opts.byhour)) {
     opts.byhour = [opts.byhour]
   }

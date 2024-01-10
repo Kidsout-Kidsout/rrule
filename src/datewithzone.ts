@@ -1,3 +1,4 @@
+import moment from 'moment-timezone'
 import { dateInTimeZone, timeToUntilString } from './dateutil'
 
 export class DateWithZone {
@@ -35,5 +36,11 @@ export class DateWithZone {
     }
 
     return dateInTimeZone(this.date, this.tzid)
+  }
+
+  /** Treats given date string local time */
+  public static fromStringAndTimezone(date: string, tzid: string) {
+    const d = new DateWithZone(moment(date).tz(tzid, false).toDate(), tzid)
+    return d
   }
 }
