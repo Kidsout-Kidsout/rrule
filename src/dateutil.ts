@@ -1,5 +1,6 @@
 import { padStart } from './helpers'
 import { Time } from './datetime'
+import moment, { Moment } from 'moment-timezone'
 
 type Datelike = Pick<Date, 'getTime'>
 
@@ -219,4 +220,12 @@ export const dateInTimeZone = function (date: Date, timeZone?: string) {
   const tzOffset = dateInTargetTZ.getTime() - dateInLocalTZ.getTime()
 
   return new Date(date.getTime() - tzOffset)
+}
+
+export function toDTSTART(date: Moment) {
+  if (date.isUTC()) {
+    return date.format(':YYYYMMDDTHHmmss') + 'Z'
+  }
+
+  return `;TZID=${date.tz()}:${date.format('YYYYMMDDTHHmmss')}`
 }

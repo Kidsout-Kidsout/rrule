@@ -4,11 +4,11 @@ export class DateWithZone {
   private date: Moment
   private tzid?: string
 
-  constructor(date: Date, tzid?: string | null) {
-    if (isNaN(date.getTime())) {
+  constructor(date: string, tzid?: string | null) {
+    this.date = moment.tz(date, tzid)
+    if (this.date.isValid()) {
       throw new RangeError('Invalid date passed to DateWithZone')
     }
-    this.date = moment.utc(date)
     if (tzid) {
       this.date.tz(tzid, true)
     }
@@ -35,7 +35,7 @@ export class DateWithZone {
   }
 
   public rezonedDate() {
-    return this.date.toDate()
+    return this.date.clone().toDate()
   }
 
   /** Treats given date string local time */
