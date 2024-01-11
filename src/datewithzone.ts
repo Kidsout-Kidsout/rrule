@@ -1,16 +1,18 @@
-import moment from 'moment-timezone'
-import { dateInTimeZone, timeToUntilString } from './dateutil'
+import moment, { Moment } from 'moment-timezone'
 
 export class DateWithZone {
-  public date: Date
-  public tzid?: string | null
+  private date: Moment
+  private tzid?: string
 
   constructor(date: Date, tzid?: string | null) {
     if (isNaN(date.getTime())) {
       throw new RangeError('Invalid date passed to DateWithZone')
     }
-    this.date = date
-    this.tzid = tzid
+    this.date = moment.utc(date)
+    if (tzid) {
+      this.date.tz(tzid, true)
+    }
+    this.tzid = tzid ?? undefined
   }
 
   private get isUTC() {
@@ -18,7 +20,9 @@ export class DateWithZone {
   }
 
   public toString() {
-    const datestr = timeToUntilString(this.date.getTime(), this.isUTC)
+    console.log('sjs', this.isUTC, this.date)
+    const datestr =
+      this.date.format('YYYYMMDDTHHmmss') + (this.isUTC ? 'Z' : '')
     if (!this.isUTC) {
       return `;TZID=${this.tzid}:${datestr}`
     }
@@ -27,20 +31,17 @@ export class DateWithZone {
   }
 
   public getTime() {
-    return this.date.getTime()
+    return this.date.toDate().getTime()
   }
 
   public rezonedDate() {
-    if (this.isUTC || !this.tzid) {
-      return this.date
-    }
-
-    return dateInTimeZone(this.date, this.tzid)
+    return this.date.toDate()
   }
 
   /** Treats given date string local time */
   public static fromStringAndTimezone(date: string, tzid: string) {
-    const d = new DateWithZone(moment(date).tz(tzid, false).toDate(), tzid)
+    const d = new DateWithZone(new Date(), tzid)
+    d.date = moment.utc(date).tz(tzid, true)
     return d
   }
 }

@@ -5,7 +5,9 @@ describe('toString', () => {
   it('returns the date when no tzid is present', () => {
     const dt = new DateWithZone(datetime(2010, 10, 5, 11, 0, 0))
     expect(dt.toString()).toBe(':20101005T110000Z')
+  })
 
+  it('returns the date when no tzid is present. Explicit UTC', () => {
     const dt2 = new DateWithZone(datetime(2010, 10, 5, 11, 0, 0), 'UTC')
     expect(dt2.toString()).toBe(':20101005T110000Z')
   })
@@ -33,7 +35,7 @@ describe('rezonedDate', () => {
   it('returns the original date when no zone is given', () => {
     const d = datetime(2010, 10, 5, 11, 0, 0)
     const dt = new DateWithZone(d)
-    expect(dt.rezonedDate()).toStrictEqual(d)
+    expect(dt.rezonedDate().getTime()).toStrictEqual(d.getTime())
   })
 
   it('returns the date in the correct zone when given', () => {
@@ -59,7 +61,7 @@ describe('fromStringAndTimezone', () => {
   })
   it('Creates correct instance 2', () => {
     const dt = DateWithZone.fromStringAndTimezone(
-      '2023-11-26T09:00:00.000',
+      '2023-11-26T09:00:00',
       'America/New_York'
     )
     expect(formatDate(dt.rezonedDate(), 'America/New_York')).toStrictEqual(
