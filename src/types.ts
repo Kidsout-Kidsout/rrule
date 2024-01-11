@@ -1,18 +1,19 @@
 import { Weekday, WeekdayStr } from './weekday'
+import { Moment } from 'moment-timezone'
 
 export interface QueryMethods {
-  all(): Date[]
-  between(after: Date, before: Date, inc: boolean): Date[]
-  before(date: Date, inc: boolean): Date | null
-  after(date: Date, inc: boolean): Date | null
+  all(): Moment[]
+  between(after: Moment, before: Moment, inc: boolean): Moment[]
+  before(date: Moment, inc: boolean): Moment | null
+  after(date: Moment, inc: boolean): Moment | null
 }
 
 export type QueryMethodTypes = keyof QueryMethods
 export type IterResultType<M extends QueryMethodTypes> = M extends
   | 'all'
   | 'between'
-  ? Date[]
-  : Date | null
+  ? Moment[]
+  : Moment | null
 
 export enum Frequency {
   YEARLY = 0,
@@ -36,11 +37,11 @@ export function freqIsDailyOrGreater(
 
 export interface Options {
   freq: Frequency
-  dtstart: Date | null
+  dtstart: Moment | null
   interval: number
   wkst: Weekday | number | null
   count: number | null
-  until: Date | null
+  until: Moment | null
   tzid: string | null
   bysetpos: number | number[] | null
   bymonth: number | number[] | null
@@ -57,7 +58,7 @@ export interface Options {
 }
 
 export interface ParsedOptions extends Options {
-  dtstart: Date
+  dtstart: Moment
   wkst: number
   bysetpos: number[]
   bymonth: number[]

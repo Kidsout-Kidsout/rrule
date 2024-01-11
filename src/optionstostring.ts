@@ -1,9 +1,9 @@
+import moment from 'moment-timezone'
 import { Options } from './types'
 import { RRule, DEFAULT_OPTIONS } from './rrule'
 import { includes, isPresent, isArray, isNumber, toArray } from './helpers'
 import { Weekday } from './weekday'
-import { timeToUntilString } from './dateutil'
-import { DateWithZone } from './datewithzone'
+import { timeToUntilString, toDTSTART } from './dateutil'
 
 export function optionsToString(options: Partial<Options>) {
   const rrule: string[][] = []
@@ -103,5 +103,10 @@ function buildDtstart(dtstart?: number, tzid?: string | null) {
     return ''
   }
 
-  return 'DTSTART' + new DateWithZone(new Date(dtstart), tzid).toString()
+  let m = moment(new Date(dtstart))
+  if (tzid) {
+    m = m.tz(tzid)
+  }
+
+  return 'DTSTART' + toDTSTART(m)
 }

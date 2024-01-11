@@ -76,14 +76,14 @@ export function parseOptions(options: Partial<Options>) {
   ) {
     switch (opts.freq) {
       case RRule.YEARLY:
-        if (!opts.bymonth) opts.bymonth = opts.dtstart.getUTCMonth() + 1
-        opts.bymonthday = opts.dtstart.getUTCDate()
+        if (!opts.bymonth) opts.bymonth = opts.dtstart!.month() + 1
+        opts.bymonthday = opts.dtstart!.date()
         break
       case RRule.MONTHLY:
-        opts.bymonthday = opts.dtstart.getUTCDate()
+        opts.bymonthday = opts.dtstart!.date()
         break
       case RRule.WEEKLY:
-        opts.byweekday = [getWeekday(opts.dtstart)]
+        opts.byweekday = [getWeekday(opts.dtstart!)]
         break
     }
   }
@@ -177,8 +177,7 @@ export function parseOptions(options: Partial<Options>) {
 
   // byhour
   if (!isPresent(opts.byhour)) {
-    const hout = opts.dtstart.getHours()
-    opts.byhour = opts.freq < RRule.HOURLY ? [hout] : null
+    opts.byhour = opts.freq < RRule.HOURLY ? [opts.dtstart!.hours()] : null
   } else if (isNumber(opts.byhour)) {
     opts.byhour = [opts.byhour]
   }
@@ -186,7 +185,7 @@ export function parseOptions(options: Partial<Options>) {
   // byminute
   if (!isPresent(opts.byminute)) {
     opts.byminute =
-      opts.freq < RRule.MINUTELY ? [opts.dtstart.getUTCMinutes()] : null
+      opts.freq < RRule.MINUTELY ? [opts.dtstart!.minutes()] : null
   } else if (isNumber(opts.byminute)) {
     opts.byminute = [opts.byminute]
   }
@@ -194,7 +193,7 @@ export function parseOptions(options: Partial<Options>) {
   // bysecond
   if (!isPresent(opts.bysecond)) {
     opts.bysecond =
-      opts.freq < RRule.SECONDLY ? [opts.dtstart.getUTCSeconds()] : null
+      opts.freq < RRule.SECONDLY ? [opts.dtstart!.seconds()] : null
   } else if (isNumber(opts.bysecond)) {
     opts.bysecond = [opts.bysecond]
   }
@@ -203,7 +202,7 @@ export function parseOptions(options: Partial<Options>) {
 }
 
 export function buildTimeset(opts: ParsedOptions) {
-  const millisecondModulo = opts.dtstart.getTime() % 1000
+  const millisecondModulo = opts.dtstart.toDate().getTime() % 1000
   if (!freqIsDailyOrGreater(opts.freq)) {
     return []
   }

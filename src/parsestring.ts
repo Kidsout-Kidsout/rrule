@@ -1,6 +1,6 @@
 import { Options, Frequency } from './types'
 import { Weekday } from './weekday'
-import { untilStringToDate } from './dateutil'
+import { untilStringToMoment } from './dateutil'
 import { Days } from './rrule'
 
 export function parseString(rfcString: string): Partial<Options> {
@@ -27,7 +27,7 @@ export function parseDtstart(line: string) {
   if (tzid) {
     options.tzid = tzid
   }
-  options.dtstart = untilStringToDate(dtstart)
+  options.dtstart = untilStringToMoment(dtstart)
   return options
 }
 
@@ -95,7 +95,7 @@ function parseRrule(line: string) {
         options.dtstart = dtstart.dtstart
         break
       case 'UNTIL':
-        options.until = untilStringToDate(value)
+        options.until = untilStringToMoment(value)
         break
       case 'BYEASTER':
         options.byeaster = Number(value)

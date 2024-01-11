@@ -1,5 +1,6 @@
-import { parse, datetime, testRecurring, TEST_CTX } from './lib/utils'
+import { parse, testRecurring, TEST_CTX } from './lib/utils'
 import { RRule, RRuleSet, rrulestr, Frequency } from '../src'
+import { datetime } from '../src/dateutil'
 import { Days } from '../src/rrule'
 import { parseInput } from '../src/rrulestr'
 

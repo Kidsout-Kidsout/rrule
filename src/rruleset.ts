@@ -1,3 +1,4 @@
+import moment, { Moment } from 'moment-timezone'
 import { RRule } from './rrule'
 import { sort, timeToUntilString } from './dateutil'
 import { includes } from './helpers'
@@ -29,11 +30,11 @@ function createGetterSetter<T>(this: any, fieldName: string) {
 
 export class RRuleSet extends RRule {
   public readonly _rrule: RRule[]
-  public readonly _rdate: Date[]
+  public readonly _rdate: Moment[]
   public readonly _exrule: RRule[]
-  public readonly _exdate: Date[]
+  public readonly _exdate: Moment[]
 
-  private _dtstart?: Date | null | undefined
+  private _dtstart?: Moment | null
   private _tzid?: string
 
   /**
@@ -87,19 +88,15 @@ export class RRuleSet extends RRule {
 
   /**
    * Adds an RDate to the set
-   *
-   * @param {Date}
    */
-  rdate(date: Date) {
+  rdate(date: Moment) {
     _addDate(date, this._rdate)
   }
 
   /**
    * Adds an EXDATE to the set
-   *
-   * @param {Date}
    */
-  exdate(date: Date) {
+  exdate(date: Moment) {
     _addDate(date, this._exdate)
   }
 
@@ -127,7 +124,7 @@ export class RRuleSet extends RRule {
    * @return List of rdates
    */
   rdates() {
-    return this._rdate.map((e) => new Date(e.getTime()))
+    return this._rdate.map((e) => e.clone())
   }
 
   /**
@@ -136,7 +133,7 @@ export class RRuleSet extends RRule {
    * @return List of exdates
    */
   exdates() {
-    return this._exdate.map((e) => new Date(e.getTime()))
+    return this._exdate.map((e) => e.clone())
   }
 
   valueOf() {
@@ -189,8 +186,8 @@ export class RRuleSet extends RRule {
 
     this._rrule.forEach((rule) => rrs.rrule(rule.clone()))
     this._exrule.forEach((rule) => rrs.exrule(rule.clone()))
-    this._rdate.forEach((date) => rrs.rdate(new Date(date.getTime())))
-    this._exdate.forEach((date) => rrs.exdate(new Date(date.getTime())))
+    this._rdate.forEach((date) => rrs.rdate(moment(date)))
+    this._exdate.forEach((date) => rrs.exdate(moment(date)))
 
     return rrs
   }
@@ -206,8 +203,8 @@ function _addRule(rrule: RRule, collection: RRule[]) {
   }
 }
 
-function _addDate(date: Date, collection: Date[]) {
-  if (!(date instanceof Date)) {
+function _addDate(date: Moment, collection: Moment[]) {
+  if (!moment.isMoment(date)) {
     throw new TypeError(String(date) + ' is not Date instance')
   }
   if (!includes(collection.map(Number), Number(date))) {
@@ -218,7 +215,7 @@ function _addDate(date: Date, collection: Date[]) {
 
 function rdatesToString(
   param: string,
-  rdates: Date[],
+  rdates: Moment[],
   tzid: string | undefined
 ) {
   const isUTC = !tzid || tzid.toUpperCase() === 'UTC'

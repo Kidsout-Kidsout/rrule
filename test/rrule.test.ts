@@ -1,13 +1,8 @@
-import {
-  parse,
-  datetime,
-  testRecurring,
-  expectedDate,
-  TEST_CTX,
-  formatDate,
-} from './lib/utils'
+import moment, { Moment } from 'moment-timezone'
+import { parse, testRecurring, expectedDate, TEST_CTX } from './lib/utils'
 import { RRule, rrulestr, Frequency } from '../src/index'
 import { set as setMockDate, reset as resetMockDate } from 'mockdate'
+import { ORDINAL_BASE, datetime } from '../src/dateutil'
 
 describe('RRule', function () {
   beforeAll(() => {
@@ -48,7 +43,7 @@ describe('RRule', function () {
   it('does not mutate the passed-in options object', function () {
     const options = {
       freq: RRule.MONTHLY,
-      dtstart: new Date(2013, 0, 1),
+      dtstart: moment(new Date(2013, 0, 1)),
       count: 3,
       bymonthday: [28],
     }
@@ -56,7 +51,7 @@ describe('RRule', function () {
 
     expect(options).toEqual({
       freq: RRule.MONTHLY,
-      dtstart: new Date(2013, 0, 1),
+      dtstart: moment(new Date(2013, 0, 1)),
       count: 3,
       bymonthday: [28],
     })
@@ -83,7 +78,7 @@ describe('RRule', function () {
     {
       rrule: new RRule({
         freq: RRule.DAILY,
-        dtstart: parse('19970902T090000'),
+        dtstart: moment.utc('1997-09-02T09:00:00'),
       }),
       method: 'before',
       args: [parse('19970905T090000')],
@@ -96,10 +91,10 @@ describe('RRule', function () {
     {
       rrule: new RRule({
         freq: RRule.DAILY,
-        dtstart: parse('19970902T090000'),
+        dtstart: moment.utc('1997-09-02T09:00:00'),
       }),
       method: 'before',
-      args: [parse('19970905T090000'), true],
+      args: [moment.utc('1997-09-05T09:00:00'), true],
     },
     datetime(1997, 9, 5, 9, 0)
   )
@@ -109,10 +104,10 @@ describe('RRule', function () {
     {
       rrule: new RRule({
         freq: RRule.DAILY,
-        dtstart: parse('19970902T090000'),
+        dtstart: moment.utc('1997-09-02T09:00:00'),
       }),
       method: 'after',
-      args: [parse('19970904T090000')],
+      args: [moment.utc('1997-09-04T09:00:00')],
     },
     datetime(1997, 9, 5, 9, 0)
   )
@@ -179,11 +174,11 @@ describe('RRule', function () {
       args: [parse('20220613T093000'), parse('20220716T083000')],
     },
     [
-      expectedDate(datetime(2022, 6, 14, 9, 0), undefined, 'Europe/London'),
-      expectedDate(datetime(2022, 6, 21, 9, 0), undefined, 'Europe/London'),
-      expectedDate(datetime(2022, 6, 28, 9, 0), undefined, 'Europe/London'),
-      expectedDate(datetime(2022, 7, 5, 9, 0), undefined, 'Europe/London'),
-      expectedDate(datetime(2022, 7, 12, 9, 0), undefined, 'Europe/London'),
+      expectedDate(datetime(2022, 6, 14, 9, 0), 'Europe/London'),
+      expectedDate(datetime(2022, 6, 21, 9, 0), 'Europe/London'),
+      expectedDate(datetime(2022, 6, 28, 9, 0), 'Europe/London'),
+      expectedDate(datetime(2022, 7, 5, 9, 0), 'Europe/London'),
+      expectedDate(datetime(2022, 7, 12, 9, 0), 'Europe/London'),
     ]
   )
 
@@ -3959,9 +3954,9 @@ describe('RRule', function () {
     new RRule({
       freq: RRule.YEARLY,
       count: 1,
-      dtstart: new Date(1420063200001),
+      dtstart: moment(new Date(1420063200001)),
     }),
-    [new Date(1420063200001)]
+    [moment(new Date(1420063200001))]
   )
 
   testRecurring(
@@ -3970,27 +3965,27 @@ describe('RRule', function () {
       freq: RRule.MONTHLY,
       count: 1,
       bysetpos: [-1, 1],
-      dtstart: new Date(1356991200001),
+      dtstart: moment(new Date(1356991200001)),
     }),
-    [new Date(1356991200001)]
+    [moment(new Date(1356991200001))]
   )
 
   it('testAfterBefore', function () {
     ;(
       ['YEARLY', 'MONTHLY', 'DAILY', 'HOURLY', 'MINUTELY', 'SECONDLY'] as const
     ).forEach(function (freqStr: keyof typeof Frequency) {
-      const date = new Date(1356991200001)
+      const date = moment(new Date(1356991200001))
       const rr = new RRule({
         freq: RRule[freqStr],
         dtstart: date,
       })
 
-      expect(date.getTime()).toBe(rr.options.dtstart.getTime())
-      const res: Date | null = rr.before(rr.after(rr.options.dtstart)!)
+      expect(date.unix()).toBe(rr.options.dtstart.unix())
+      const res: Moment | null = rr.before(rr.after(rr.options.dtstart)!)
 
       let resTimestamp: number | null = null
-      if (res != null) resTimestamp = res.getTime()
-      expect(resTimestamp).toBe(rr.options.dtstart.getTime())
+      if (res != null) resTimestamp = res.toDate().getTime()
+      expect(resTimestamp).toBe(rr.options.dtstart.unix())
     })
   })
 
@@ -4092,8 +4087,8 @@ describe('RRule', function () {
     const rrule = new RRule({
       freq: RRule.WEEKLY,
       interval: 1,
-      dtstart: new Date(startEvent),
-      until: new Date(endSearch),
+      dtstart: moment(new Date(startEvent)),
+      until: moment(new Date(endSearch)),
     })
 
     expect(rrule.all()).toEqual([
@@ -4118,8 +4113,12 @@ describe('RRule', function () {
   })
 
   it('generates monthly (#233)', () => {
-    const start = new Date(Date.parse('Mon Aug 06 2018 10:30:00 GMT+0530'))
-    const end = new Date(Date.parse('Mon Oct 08 2018 11:00:00 GMT+0530'))
+    const start = moment(
+      new Date(Date.parse('Mon Aug 06 2018 10:30:00 GMT+0530'))
+    )
+    const end = moment(
+      new Date(Date.parse('Mon Oct 08 2018 11:00:00 GMT+0530'))
+    )
 
     const rrule = new RRule({
       freq: RRule.MONTHLY,
@@ -4176,7 +4175,7 @@ describe('RRule', function () {
         tzid: targetZone,
       })
       const recurrence = rule.all()[0]
-      const expected = expectedDate(startDate, currentLocalDate, targetZone)
+      const expected = expectedDate(startDate, targetZone)
 
       expect(recurrence).toEqual(expected)
 
@@ -4185,16 +4184,13 @@ describe('RRule', function () {
 
     it('generates correct weekly recurrences when dst changes', () => {
       const rule = new RRule({
-        dtstart: new Date('2011-10-02T09:00:00'),
+        dtstart: moment('2011-10-02T09:00:00'),
         freq: Frequency.WEEKLY,
         tzid: 'America/New_York',
       })
       const dates = rule
-        .between(
-          new Date('2023-10-20T00:00:00'),
-          new Date('2023-11-20T00:00:00')
-        )
-        .map((d) => formatDate(d, 'America/New_York'))
+        .between(moment('2023-10-20T00:00:00'), moment('2023-11-20T00:00:00'))
+        .map((d) => d.format())
 
       expect(dates).toEqual([
         '2023-10-22 09:00:00 GMT−4',
@@ -4215,7 +4211,7 @@ describe('RRule', function () {
         tzid: targetZone,
       })
       const recurrence = rule.all()[0]
-      const expected = expectedDate(startDate, currentLocalDate, targetZone)
+      const expected = expectedDate(startDate, targetZone)
 
       expect(recurrence).toEqual(expected)
 
@@ -4231,8 +4227,8 @@ describe('RRule', function () {
         count: 1,
         tzid: targetZone,
       })
-      const recurrence = rule.after(new Date(0))
-      const expected = expectedDate(startDate, currentLocalDate, targetZone)
+      const recurrence = rule.after(ORDINAL_BASE.clone())
+      const expected = expectedDate(startDate, targetZone)
 
       expect(recurrence).toEqual(expected)
 
@@ -4242,7 +4238,7 @@ describe('RRule', function () {
 
   it('throws an error when dtstart is invalid', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const invalidDate = new Date(undefined as any)
+    const invalidDate = moment(new Date(undefined as any))
     const validDate = datetime(2017, 1, 1)
     expect(() => new RRule({ dtstart: invalidDate })).toThrow(
       'Invalid options: dtstart'

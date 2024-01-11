@@ -1,12 +1,8 @@
-import {
-  parse,
-  datetime,
-  testRecurring,
-  expectedDate,
-  TEST_CTX,
-} from './lib/utils'
+import { parse, testRecurring, expectedDate, TEST_CTX } from './lib/utils'
+import { datetime } from '../src/dateutil'
 import { RRule, RRuleSet, rrulestr, Frequency } from '../src'
 import { set as setMockDate, reset as resetMockDate } from 'mockdate'
+import moment, { Moment } from 'moment'
 
 describe('RRuleSet', function () {
   beforeAll(() => {
@@ -583,26 +579,10 @@ describe('RRuleSet', function () {
       set.rdate(datetime(2002, 3, 1, 9, 0, 0))
 
       expect(set.all()).toEqual([
-        expectedDate(
-          datetime(2000, 1, 1, 9, 0, 0),
-          currentLocalDate,
-          targetZone
-        ),
-        expectedDate(
-          datetime(2002, 1, 1, 9, 0, 0),
-          currentLocalDate,
-          targetZone
-        ),
-        expectedDate(
-          datetime(2002, 3, 1, 9, 0, 0),
-          currentLocalDate,
-          targetZone
-        ),
-        expectedDate(
-          datetime(2003, 1, 1, 9, 0, 0),
-          currentLocalDate,
-          targetZone
-        ),
+        expectedDate(datetime(2000, 1, 1, 9, 0, 0), targetZone),
+        expectedDate(datetime(2002, 1, 1, 9, 0, 0), targetZone),
+        expectedDate(datetime(2002, 3, 1, 9, 0, 0), targetZone),
+        expectedDate(datetime(2003, 1, 1, 9, 0, 0), targetZone),
       ])
 
       resetMockDate()
@@ -635,14 +615,10 @@ describe('RRuleSet', function () {
 
       set.tzid(targetZone)
 
-      set.rdate(new Date(Date.parse('2002-03-01T09:00:00')))
+      set.rdate(moment('2002-03-01T09:00:00'))
 
       expect(set.all()).toEqual([
-        expectedDate(
-          new Date(Date.parse('2002-03-01T09:00:00')),
-          currentLocalDate,
-          targetZone
-        ),
+        expectedDate(moment('2002-03-01T09:00:00'), targetZone),
       ])
 
       resetMockDate()
@@ -650,7 +626,7 @@ describe('RRuleSet', function () {
   })
 
   describe('with end date', () => {
-    let cursor: Date
+    let cursor: Moment = moment()
 
     beforeEach(() => {
       cursor = datetime(2017, 12, 25, 16, 0, 0)
@@ -735,20 +711,10 @@ describe('RRuleSet', function () {
 
     const updateWithEndDate = (
       recurrence: string[],
-      updatedCursor: Date
+      updatedCursor: Moment
     ): string => {
-      const oneDay = 24 * 60 * 60 * 1000
-      const oneDayEarlier = new Date(updatedCursor.getTime() - oneDay)
-      const newEndDate = new Date(
-        Date.UTC(
-          oneDayEarlier.getUTCFullYear(),
-          oneDayEarlier.getUTCMonth(),
-          oneDayEarlier.getUTCDate(),
-          23,
-          59,
-          59
-        )
-      )
+      const oneDayEarlier = updatedCursor.subtract(1, 'day')
+      const newEndDate = oneDayEarlier.clone().endOf('day')
 
       const rrule = rrulestr(recurrence.join('\n'))
 
@@ -765,7 +731,7 @@ describe('RRuleSet', function () {
 
     const amendRuleSetWithExceptionDate = (
       recurrence: string[],
-      cursor: Date
+      cursor: Moment
     ): string => {
       const ruleSet = rrulestr(recurrence.join('\n'), {
         forceset: true,
@@ -793,7 +759,7 @@ describe('RRuleSet', function () {
             expect(actual).toBe(expected.join('\n'))
           })
         },
-        toAmendExdate(excluded: Date, expected: string[]) {
+        toAmendExdate(excluded: Moment, expected: string[]) {
           recurrences.forEach((recurrence) => {
             const actual = amendRuleSetWithExceptionDate(recurrence, excluded)
             expect(actual).toBe(expected.join('\n'))
@@ -833,8 +799,10 @@ describe('RRuleSet', function () {
   it('throws an error if non-dates are added via rdate or exdate', () => {
     const set = new RRuleSet()
 
-    expect(() => set.rdate('foo' as unknown as Date)).toThrow()
-    expect(() => set.exdate('foo' as unknown as Date)).toThrow()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(() => set.rdate('foo' as any)).toThrow()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(() => set.exdate('foo' as any)).toThrow()
   })
 
   describe('getters', () => {

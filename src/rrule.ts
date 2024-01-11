@@ -1,3 +1,4 @@
+import { Moment } from 'moment-timezone'
 import { isValidDate } from './dateutil'
 
 import IterResult, { IterArgs } from './iterresult'
@@ -136,7 +137,7 @@ export class RRule implements QueryMethods {
 
   public _cacheAdd(
     what: CacheKeys | 'all',
-    value: Date[] | Date | null,
+    value: Moment[] | Moment | null,
     args?: Partial<IterArgs>
   ) {
     if (!this._cache) return
@@ -149,12 +150,12 @@ export class RRule implements QueryMethods {
    * to stop the iteration.
    * @return Array containing all recurrences.
    */
-  all(iterator?: (d: Date, len: number) => boolean): Date[] {
+  all(iterator?: (d: Moment, len: number) => boolean): Moment[] {
     if (iterator) {
       return this._iter(new CallbackIterResult('all', {}, iterator))
     }
 
-    let result = this._cacheGet('all') as Date[] | false
+    let result = this._cacheGet('all') as Moment[] | false
     if (result === false) {
       result = this._iter(new IterResult('all', {}))
       this._cacheAdd('all', result)
@@ -171,11 +172,11 @@ export class RRule implements QueryMethods {
    * @return Array
    */
   between(
-    after: Date,
-    before: Date,
+    after: Moment,
+    before: Moment,
     inc = false,
-    iterator?: (d: Date, len: number) => boolean
-  ): Date[] {
+    iterator?: (d: Moment, len: number) => boolean
+  ): Moment[] {
     if (!isValidDate(after) || !isValidDate(before)) {
       throw new Error('Invalid date passed in to RRule.between')
     }
@@ -194,7 +195,7 @@ export class RRule implements QueryMethods {
       result = this._iter(new IterResult('between', args))
       this._cacheAdd('between', result, args)
     }
-    return result as Date[]
+    return result as Moment[]
   }
 
   /**
@@ -202,9 +203,9 @@ export class RRule implements QueryMethods {
    * The inc keyword defines what happens if dt is an occurrence.
    * With inc == True, if dt itself is an occurrence, it will be returned.
    *
-   * @return Date or null
+   * @return Moment or null
    */
-  before(dt?: Date, inc = false): Date | null {
+  before(dt?: Moment, inc = false): Moment | null {
     if (!isValidDate(dt)) {
       throw new Error('Invalid date passed in to RRule.before')
     }
@@ -214,7 +215,7 @@ export class RRule implements QueryMethods {
       result = this._iter(new IterResult('before', args))
       this._cacheAdd('before', result, args)
     }
-    return result as Date | null
+    return result as Moment | null
   }
 
   /**
@@ -222,9 +223,9 @@ export class RRule implements QueryMethods {
    * The inc keyword defines what happens if dt is an occurrence.
    * With inc == True, if dt itself is an occurrence, it will be returned.
    *
-   * @return Date or null
+   * @return Moment or null
    */
-  after(dt: Date, inc = false): Date | null {
+  after(dt: Moment, inc = false): Moment | null {
     if (!isValidDate(dt)) {
       throw new Error('Invalid date passed in to RRule.after')
     }
@@ -234,7 +235,7 @@ export class RRule implements QueryMethods {
       result = this._iter(new IterResult('after', args))
       this._cacheAdd('after', result, args)
     }
-    return result as Date | null
+    return result as Moment | null
   }
 
   /**

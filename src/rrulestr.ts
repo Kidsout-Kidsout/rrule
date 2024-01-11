@@ -1,12 +1,13 @@
+import { Moment } from 'moment-timezone'
 import { RRule } from './rrule'
 import { RRuleSet } from './rruleset'
-import { untilStringToDate } from './dateutil'
+import { untilStringToMoment } from './dateutil'
 import { includes, split } from './helpers'
 import { Options } from './types'
 import { parseString, parseDtstart } from './parsestring'
 
 export interface RRuleStrOptions {
-  dtstart: Date | null
+  dtstart: Moment | null
   cache: boolean
   unfold: boolean
   forceset: boolean
@@ -29,9 +30,9 @@ const DEFAULT_OPTIONS: RRuleStrOptions = {
 
 export function parseInput(s: string, options: Partial<RRuleStrOptions>) {
   const rrulevals: Partial<Options>[] = []
-  let rdatevals: Date[] = []
+  let rdatevals: Moment[] = []
   const exrulevals: Partial<Options>[] = []
-  let exdatevals: Date[] = []
+  let exdatevals: Moment[] = []
 
   const parsedDtstart = parseDtstart(s)
   const { dtstart } = parsedDtstart
@@ -153,7 +154,7 @@ export function rrulestr(
 
 function groomRruleOptions(
   val: Partial<Options>,
-  dtstart?: Date | null,
+  dtstart?: Moment | null,
   tzid?: string | null
 ) {
   return {
@@ -247,5 +248,5 @@ function validateDateParm(parms: string[]) {
 function parseRDate(rdateval: string, parms: string[]) {
   validateDateParm(parms)
 
-  return rdateval.split(',').map((datestr) => untilStringToDate(datestr))
+  return rdateval.split(',').map((datestr) => untilStringToMoment(datestr))
 }

@@ -1,10 +1,10 @@
 import moment from 'moment-timezone'
-import { datetime, toDTSTART, untilStringToDate } from '../src/dateutil'
+import { datetime, toDTSTART, untilStringToMoment } from '../src/dateutil'
 
 describe('untilStringToDate', () => {
   it('parses a date string', () => {
-    const date = untilStringToDate('19970902T090000')
-    expect(date.getTime()).toBe(datetime(1997, 9, 2, 9, 0, 0).getTime())
+    const date = untilStringToMoment('19970902T090000')
+    expect(date.unix()).toBe(datetime(1997, 9, 2, 9, 0, 0).unix())
   })
 })
 

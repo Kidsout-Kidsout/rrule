@@ -176,9 +176,9 @@ export default class ToText {
       const until = this.options.until
       this.add(
         this.dateFormatter(
-          until.getUTCFullYear(),
-          this.language.monthNames[until.getUTCMonth()],
-          until.getUTCDate()
+          until.year(),
+          this.language.monthNames[until.month()],
+          until.date()
         )
       )
     } else if (this.options.count) {

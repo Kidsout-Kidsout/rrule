@@ -5,9 +5,9 @@ import Iterinfo from '../iterinfo/index'
 import { RRule } from '../rrule'
 import { buildTimeset } from '../parseoptions'
 import { notEmpty, includes, isPresent } from '../helpers'
-import { DateWithZone } from '../datewithzone'
 import { buildPoslist } from './poslist'
 import { Time, DateTime } from '../datetime'
+import { Moment } from 'moment'
 
 export function iter<M extends QueryMethodTypes>(
   iterResult: IterResult<M>,
@@ -20,18 +20,16 @@ export function iter<M extends QueryMethodTypes>(
     return emitResult(iterResult)
   }
 
-  const counterDate = DateTime.fromDate(dtstart)
-
   const ii = new Iterinfo(options)
-  ii.rebuild(counterDate.year, counterDate.month)
+  ii.rebuild(dtstart.year(), dtstart.month())
 
-  let timeset = makeTimeset(ii, counterDate, options)
+  let timeset = makeTimeset(ii, dtstart.clone(), options)
 
   for (;;) {
     const [dayset, start, end] = ii.getdayset(freq)(
-      counterDate.year,
-      counterDate.month,
-      counterDate.day
+      dtstart.year(),
+      dtstart.month(),
+      dtstart.day()
     )
 
     const filtered = removeFilteredDays(dayset, start, end, ii, options)
@@ -185,7 +183,7 @@ function removeFilteredDays(
 
 function makeTimeset(
   ii: Iterinfo,
-  counterDate: DateTime,
+  counterDate: Moment,
   options: ParsedOptions
 ): Time[] {
   const { freq, byhour, byminute, bysecond } = options
@@ -197,21 +195,21 @@ function makeTimeset(
   if (
     (freq >= RRule.HOURLY &&
       notEmpty(byhour) &&
-      !includes(byhour, counterDate.hour)) ||
+      !includes(byhour, counterDate.hour())) ||
     (freq >= RRule.MINUTELY &&
       notEmpty(byminute) &&
-      !includes(byminute, counterDate.minute)) ||
+      !includes(byminute, counterDate.minute())) ||
     (freq >= RRule.SECONDLY &&
       notEmpty(bysecond) &&
-      !includes(bysecond, counterDate.second))
+      !includes(bysecond, counterDate.second()))
   ) {
     return []
   }
 
   return ii.gettimeset(freq)(
-    counterDate.hour,
-    counterDate.minute,
-    counterDate.second,
-    counterDate.millisecond
+    counterDate.hour(),
+    counterDate.minute(),
+    counterDate.second(),
+    counterDate.millisecond()
   )
 }

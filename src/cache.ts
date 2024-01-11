@@ -1,3 +1,4 @@
+import moment, { Moment } from 'moment-timezone'
 import IterResult, { IterArgs } from './iterresult'
 import { clone, cloneDates } from './dateutil'
 import { isArray } from './helpers'
@@ -11,18 +12,20 @@ function argsMatch(
   if (Array.isArray(left)) {
     if (!Array.isArray(right)) return false
     if (left.length !== right.length) return false
-    return left.every((date, i) => date.getTime() === right[i].getTime())
+    return left.every(
+      (date, i) => date.toDate().getTime() === right[i].toDate().getTime()
+    )
   }
 
-  if (left instanceof Date) {
-    return right instanceof Date && left.getTime() === right.getTime()
+  if (moment.isMoment(left)) {
+    return moment.isMoment(right) && left.unix() === right.unix()
   }
 
   return left === right
 }
 
 export class Cache {
-  all: Date[] | Partial<IterArgs> | false = false
+  all: Moment[] | Partial<IterArgs> | false = false
   before: IterArgs[] = []
   after: IterArgs[] = []
   between: IterArgs[] = []
@@ -34,15 +37,15 @@ export class Cache {
    */
   public _cacheAdd(
     what: CacheKeys | 'all',
-    value: Date[] | Date | null,
+    value: Moment[] | Moment | null,
     args?: Partial<IterArgs>
   ) {
     if (value) {
-      value = value instanceof Date ? clone(value) : cloneDates(value)
+      value = moment.isMoment(value) ? clone(value) : cloneDates(value)
     }
 
     if (what === 'all') {
-      this.all = value as Date[]
+      this.all = value as Moment[]
     } else {
       args = args || {}
       args._value = value
@@ -60,8 +63,8 @@ export class Cache {
   public _cacheGet(
     what: CacheKeys | 'all',
     args?: Partial<IterArgs>
-  ): Date | Date[] | false | null {
-    let cached: Date | Date[] | false | null = false
+  ): Moment | Moment[] | false | null {
+    let cached: Moment | Moment[] | false | null = false
     const argsKeys = args ? (Object.keys(args) as (keyof IterArgs)[]) : []
     const findCacheDiff = function (item: IterArgs) {
       for (let i = 0; i < argsKeys.length; i++) {
@@ -75,7 +78,7 @@ export class Cache {
 
     const cachedObject = this[what]
     if (what === 'all') {
-      cached = this.all as Date[]
+      cached = this.all as Moment[]
     } else if (isArray(cachedObject)) {
       // Let's see whether we've already called the
       // 'what' method with the same 'args'
@@ -91,16 +94,16 @@ export class Cache {
       // Not in the cache, but we already know all the occurrences,
       // so we can find the correct dates from the cached ones.
       const iterResult = new IterResult(what, args ?? {})
-      for (let i = 0; i < (this.all as Date[]).length; i++) {
-        if (!iterResult.accept((this.all as Date[])[i])) break
+      for (let i = 0; i < (this.all as Moment[]).length; i++) {
+        if (!iterResult.accept((this.all as Moment[])[i])) break
       }
-      cached = iterResult.getValue() as Date
+      cached = iterResult.getValue() as Moment
       this._cacheAdd(what, cached, args)
     }
 
     return isArray(cached)
       ? cloneDates(cached)
-      : cached instanceof Date
+      : moment.isMoment(cached)
       ? clone(cached)
       : cached
   }

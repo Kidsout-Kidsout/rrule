@@ -1,6 +1,6 @@
-export { datetime } from '../../src/dateutil'
 import { dateInTimeZone, datetime } from '../../src/dateutil'
 import { RRule, RRuleSet } from '../../src'
+import moment, { Moment } from 'moment-timezone'
 
 export const TEST_CTX = {
   ALSO_TESTSTRING_FUNCTIONS: false,
@@ -10,8 +10,8 @@ export const TEST_CTX = {
 }
 
 const assertDatesEqual = function (
-  actual: Date | Date[] | null | undefined,
-  expected: Date | Date[] | null | undefined
+  actual: Moment | Moment[] | null | undefined,
+  expected: Moment | Moment[] | null | undefined
 ) {
   if (actual && !(actual instanceof Array)) actual = [actual]
   if (expected && !(expected instanceof Array)) expected = [expected]
@@ -27,12 +27,12 @@ const assertDatesEqual = function (
   for (let i = 0; i < expected.length; i++) {
     const act = actual[i]
     const exp = expected[i]
-    expect(exp instanceof Date ? exp.toString() : exp).toBe(act.toString())
+    expect(moment.isMoment(exp) ? exp.toString() : exp).toBe(act.toString())
   }
 }
 
-const extractTime = function (date: Date) {
-  return date != null ? date.getTime() : void 0
+const extractTime = function (date?: Moment | null) {
+  return date?.toDate().getTime() ?? 0
 }
 
 /**
@@ -51,7 +51,7 @@ export const parse = function (str: string) {
 }
 
 interface TestRecurring {
-  (m: string, testObj: unknown, expectedDates: Date | Date[]): void
+  (m: string, testObj: unknown, expectedDates: Moment | Moment[]): void
   only: (...args: unknown[]) => void
   skip: (...args: unknown[]) => void
 }
@@ -65,7 +65,7 @@ interface TestObj {
 export const testRecurring = function (
   msg: string,
   testObj: TestObj | RRule | (() => TestObj),
-  expectedDates: Date | Date[],
+  expectedDates: Moment | Moment[],
   itFunc: jest.Func = it
 ) {
   let rule: RRule
@@ -215,24 +215,6 @@ testRecurring.skip = (args) => {
   it.skip(description, () => {})
 }
 
-export function expectedDate(
-  startDate: Date,
-  currentLocalDate?: Date,
-  targetZone?: string
-): Date {
+export function expectedDate(startDate: Moment, targetZone?: string): Moment {
   return dateInTimeZone(startDate, targetZone)
-}
-
-export function formatDate(d: Date, timeZone?: string) {
-  return new Intl.DateTimeFormat('sv-SE', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-    timeZoneName: 'short',
-  }).format(d)
 }

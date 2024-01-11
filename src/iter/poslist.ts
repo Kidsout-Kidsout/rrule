@@ -1,3 +1,4 @@
+import moment, { Moment } from 'moment-timezone'
 import { combine, fromOrdinal, sort } from '../dateutil'
 import Iterinfo from '../iterinfo/index'
 import { pymod, isPresent, includes } from '../helpers'
@@ -11,7 +12,7 @@ export function buildPoslist(
   ii: Iterinfo,
   dayset: (number | null)[]
 ) {
-  const poslist: Date[] = []
+  const poslist: Moment[] = []
 
   for (let j = 0; j < bysetpos.length; j++) {
     let daypos: number
@@ -26,11 +27,11 @@ export function buildPoslist(
       timepos = pymod(pos - 1, timeset.length)
     }
 
-    const tmp = []
+    const tmp: Moment[] = []
     for (let k = start; k < end; k++) {
       const val = dayset[k]
       if (!isPresent(val)) continue
-      tmp.push(val)
+      tmp.push(moment(val))
     }
     let i: number
     if (daypos < 0) {

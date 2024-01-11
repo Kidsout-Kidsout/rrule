@@ -1,6 +1,7 @@
 import { padStart } from './helpers'
 import { Time } from './datetime'
 import moment, { Moment } from 'moment-timezone'
+import { Frequency, ParsedOptions } from './types'
 
 type Datelike = Pick<Date, 'getTime'>
 
@@ -12,7 +13,7 @@ export const datetime = function (
   i = 0,
   s = 0
 ) {
-  return new Date(Date.UTC(y, m - 1, d, h, i, s))
+  return moment(new Date(Date.UTC(y, m - 1, d, h, i, s)))
 }
 
 /**
@@ -37,7 +38,7 @@ export const MAXYEAR = 9999
  * want to confuse the JS engine with milliseconds > Number.MAX_NUMBER,
  * therefore we use 1-Jan-1970 instead
  */
-export const ORDINAL_BASE = datetime(1970, 1, 1)
+export const ORDINAL_BASE = moment.utc('1970-01-01T00:00:00')
 
 /**
  * Python: MO-SU: 0 - 6
@@ -84,23 +85,14 @@ export const tzOffset = function (date: Date) {
 /**
  * @see: <http://www.mcfedries.com/JavaScript/DaysBetween.asp>
  */
-export const daysBetween = function (date1: Date, date2: Date) {
-  // The number of milliseconds in one day
-  // Convert both dates to milliseconds
-  const date1ms = date1.getTime()
-  const date2ms = date2.getTime()
-
-  // Calculate the difference in milliseconds
-  const differencems = date1ms - date2ms
-
-  // Convert back to days and return
-  return Math.round(differencems / ONE_DAY)
+export const daysBetween = function (date1: Moment, date2: Moment) {
+  return moment.duration(date1.diff(date2)).asDays()
 }
 
 /**
  * @see: <http://docs.python.org/library/datetime.html#datetime.date.toordinal>
  */
-export const toOrdinal = function (date: Date) {
+export const toOrdinal = function (date: Moment) {
   return daysBetween(date, ORDINAL_BASE)
 }
 
@@ -108,12 +100,12 @@ export const toOrdinal = function (date: Date) {
  * @see - <http://docs.python.org/library/datetime.html#datetime.date.fromordinal>
  */
 export const fromOrdinal = function (ordinal: number) {
-  return new Date(ORDINAL_BASE.getTime() + ordinal * ONE_DAY)
+  return ORDINAL_BASE.clone().add(ordinal + 1, 'days')
 }
 
-export const getMonthDays = function (date: Date) {
-  const month = date.getUTCMonth()
-  return month === 1 && isLeapYear(date.getUTCFullYear())
+export const getMonthDays = function (date: Moment) {
+  const month = date.toDate().getUTCMonth()
+  return month === 1 && isLeapYear(date.toDate().getUTCFullYear())
     ? 29
     : MONTH_DAYS[month]
 }
@@ -121,8 +113,8 @@ export const getMonthDays = function (date: Date) {
 /**
  * @return {Number} python-like weekday
  */
-export const getWeekday = function (date: Date) {
-  return PY_WEEKDAYS[date.getUTCDay()]
+export const getWeekday = function (date: Moment) {
+  return PY_WEEKDAYS[date.toDate().getUTCDay()]
 }
 
 /**
@@ -136,28 +128,26 @@ export const monthRange = function (year: number, month: number) {
 /**
  * @see: <http://docs.python.org/library/datetime.html#datetime.datetime.combine>
  */
-export const combine = function (date: Date, time: Date | Time) {
+export const combine = function (date: Moment, time: Moment | Time) {
   time = time || date
-  return new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      time.getHours(),
-      time.getMinutes(),
-      time.getSeconds(),
-      time.getMilliseconds()
+  return date
+    .clone()
+    .hour(time instanceof Time ? time.getHours() : time.hours())
+    .minute(time instanceof Time ? time.getMinutes() : time.minutes())
+    .second(time instanceof Time ? time.getSeconds() : time.seconds())
+    .millisecond(
+      time instanceof Time ? time.getMilliseconds() : time.milliseconds()
     )
-  )
 }
 
-export const clone = function (date: Date | Time) {
-  const dolly = new Date(date.getTime())
+export const clone = function (date: Moment | Time) {
+  if (moment.isMoment(date)) return date.clone()
+  const dolly = moment(new Date(date.getTime()))
   return dolly
 }
 
-export const cloneDates = function (dates: Date[] | Time[]) {
-  const clones = []
+export const cloneDates = function (dates: Moment[] | Time[]) {
+  const clones: Moment[] = []
   for (let i = 0; i < dates.length; i++) {
     clones.push(clone(dates[i]))
   }
@@ -167,10 +157,17 @@ export const cloneDates = function (dates: Date[] | Time[]) {
 /**
  * Sorts an array of Date or Time objects
  */
-export const sort = function <T extends Datelike>(dates: T[]) {
+export const sort = function (dates: (Moment | Datelike)[]) {
   dates.sort(function (a, b) {
-    return a.getTime() - b.getTime()
+    return getTime(a) - getTime(b)
   })
+}
+
+const getTime = (m: Moment | Datelike) => {
+  if (moment.isMoment(m)) {
+    return m.toDate().getTime()
+  }
+  return m.getTime()
 }
 
 export const timeToUntilString = function (time: number, utc = true) {
@@ -187,39 +184,28 @@ export const timeToUntilString = function (time: number, utc = true) {
   ].join('')
 }
 
-export const untilStringToDate = function (until: string) {
+export const untilStringToMoment = function (until: string) {
   const re = /^(\d{4})(\d{2})(\d{2})(T(\d{2})(\d{2})(\d{2})Z?)?$/
   const bits = re.exec(until)
 
   if (!bits) throw new Error(`Invalid UNTIL value: ${until}`)
 
-  return new Date(
-    Date.UTC(
-      parseInt(bits[1], 10),
-      parseInt(bits[2], 10) - 1,
-      parseInt(bits[3], 10),
-      parseInt(bits[5], 10) || 0,
-      parseInt(bits[6], 10) || 0,
-      parseInt(bits[7], 10) || 0
+  return moment(
+    new Date(
+      Date.UTC(
+        parseInt(bits[1], 10),
+        parseInt(bits[2], 10) - 1,
+        parseInt(bits[3], 10),
+        parseInt(bits[5], 10) || 0,
+        parseInt(bits[6], 10) || 0,
+        parseInt(bits[7], 10) || 0
+      )
     )
   )
 }
 
-const dateTZtoISO8601 = function (date: Date, timeZone: string) {
-  // date format for sv-SE is almost ISO8601
-  const dateStr = date.toLocaleString('sv-SE', { timeZone })
-  // '2023-02-07 10:41:36'
-  return dateStr.replace(' ', 'T') + 'Z'
-}
-
-export const dateInTimeZone = function (date: Date, timeZone?: string) {
-  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  // Date constructor can only reliably parse dates in ISO8601 format
-  const dateInLocalTZ = new Date(dateTZtoISO8601(date, localTimeZone))
-  const dateInTargetTZ = new Date(dateTZtoISO8601(date, timeZone ?? 'UTC'))
-  const tzOffset = dateInTargetTZ.getTime() - dateInLocalTZ.getTime()
-
-  return new Date(date.getTime() - tzOffset)
+export const dateInTimeZone = function (date: Moment, timeZone = 'UTC') {
+  return date.clone().tz(timeZone, false)
 }
 
 export function toDTSTART(date: Moment) {
@@ -228,4 +214,25 @@ export function toDTSTART(date: Moment) {
   }
 
   return `;TZID=${date.tz()}:${date.format('YYYYMMDDTHHmmss')}`
+}
+
+export function add(date: Moment, options: ParsedOptions, filtered: boolean) {
+  const { freq, interval, wkst, byhour, byminute, bysecond } = options
+
+  switch (freq) {
+    case Frequency.YEARLY:
+      return date.add(interval, 'year')
+    case Frequency.MONTHLY:
+      return date.add(interval, 'month')
+    case Frequency.WEEKLY:
+      return this.addWeekly(interval, wkst)
+    case Frequency.DAILY:
+      return date.add(interval, 'day')
+    case Frequency.HOURLY:
+      return this.addHours(interval, filtered, byhour)
+    case Frequency.MINUTELY:
+      return this.addMinutes(interval, filtered, byhour, byminute)
+    case Frequency.SECONDLY:
+      return this.addSeconds(interval, filtered, byhour, byminute, bysecond)
+  }
 }

@@ -1,4 +1,5 @@
 import { QueryMethodTypes, IterResultType } from './types'
+import { Moment } from 'moment-timezone'
 
 // =============================================================================
 // Results
@@ -6,10 +7,10 @@ import { QueryMethodTypes, IterResultType } from './types'
 
 export interface IterArgs {
   inc: boolean
-  before: Date
-  after: Date
-  dt: Date
-  _value: Date | Date[] | null
+  before: Moment
+  after: Moment
+  dt: Moment
+  _value: Moment | Moment[] | null
 }
 
 /**
@@ -18,9 +19,9 @@ export interface IterArgs {
 export default class IterResult<M extends QueryMethodTypes> {
   public readonly method: M
   public readonly args: Partial<IterArgs>
-  public readonly minDate: Date | null = null
-  public readonly maxDate: Date | null = null
-  public _result: Date[] = []
+  public readonly minDate: Moment | null = null
+  public readonly maxDate: Moment | null = null
+  public _result: Moment[] = []
   public total = 0
 
   constructor(method: M, args: Partial<IterArgs>) {
@@ -30,29 +31,29 @@ export default class IterResult<M extends QueryMethodTypes> {
     if (method === 'between') {
       this.maxDate = args.inc
         ? args.before!
-        : new Date(args.before!.getTime() - 1)
+        : args.before!.clone().subtract(1, 'millisecond')
       this.minDate = args.inc
         ? args.after!
-        : new Date(args.after!.getTime() + 1)
+        : args.after!.clone().subtract(1, 'millisecond')
     } else if (method === 'before') {
-      this.maxDate = args.inc ? args.dt! : new Date(args.dt!.getTime() - 1)
+      this.maxDate = args.inc ? args.dt! : args.dt!.subtract(1, 'millisecond')
     } else if (method === 'after') {
-      this.minDate = args.inc ? args.dt! : new Date(args.dt!.getTime() + 1)
+      this.minDate = args.inc ? args.dt! : args.dt!.add(1, 'millisecond')
     }
   }
 
   /**
    * Possibly adds a date into the result.
    *
-   * @param {Date} date - the date isn't necessarly added to the result
+   * @param date - the date isn't necessarly added to the result
    * list (if it is too late/too early)
-   * @return {Boolean} true if it makes sense to continue the iteration
+   * @return true if it makes sense to continue the iteration
    * false if we're done.
    */
-  accept(date: Date) {
+  accept(date: Moment) {
     ++this.total
-    const tooEarly = this.minDate && date < this.minDate
-    const tooLate = this.maxDate && date > this.maxDate
+    const tooEarly = this.minDate && date.isBefore(this.minDate)
+    const tooLate = this.maxDate && date.isAfter(this.maxDate)
 
     if (this.method === 'between') {
       if (tooEarly) return true
@@ -70,10 +71,10 @@ export default class IterResult<M extends QueryMethodTypes> {
 
   /**
    *
-   * @param {Date} date that is part of the result.
-   * @return {Boolean} whether we are interested in more values.
+   * @param date that is part of the result.
+   * @return whether we are interested in more values.
    */
-  add(date: Date) {
+  add(date: Moment) {
     this._result.push(date)
     return true
   }
@@ -81,8 +82,6 @@ export default class IterResult<M extends QueryMethodTypes> {
   /**
    * 'before' and 'after' return only one date, whereas 'all'
    * and 'between' an array.
-   *
-   * @return {Date,Array?}
    */
   getValue(): IterResultType<M> {
     const res = this._result

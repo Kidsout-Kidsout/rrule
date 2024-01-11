@@ -1,6 +1,7 @@
+import { Moment } from 'moment-timezone'
 import IterResult, { IterArgs } from './iterresult'
 
-type Iterator = (d: Date, len: number) => boolean
+type Iterator = (d: Moment, len: number) => boolean
 
 /**
  * IterResult subclass that calls a callback function on each add,
@@ -19,7 +20,7 @@ export default class CallbackIterResult extends IterResult<'all' | 'between'> {
     this.iterator = iterator
   }
 
-  add(date: Date) {
+  add(date: Moment) {
     if (this.iterator(date, this._result.length)) {
       this._result.push(date)
       return true
